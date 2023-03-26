@@ -38,6 +38,16 @@ class TestCreate_doc(unittest.TestCase):
         assert help_result.exit_code == 0
         assert '--help  Show this message and exit.' in help_result.output
 
+    def test_process_html(self):
+        """Test the CLI."""
+
+        if not os.path.exists('./.create_doc.json'):
+            result = runner.invoke(cli.init)
+
+        runner = CliRunner()
+        result = runner.invoke(cli.process_html)
+        assert result.exit_code == 0
+
     def test_os_environment(self):
         """Test the os environment."""
         result = cli.check_openapi_key()

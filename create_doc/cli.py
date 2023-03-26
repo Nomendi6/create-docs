@@ -56,7 +56,7 @@ def init():
 
 
 @cli.command()
-def process_html(input, output):
+def process_html():
     """Process HTML file"""
     click.echo('Processing html files...')
     check_openapi_key()
