@@ -3,6 +3,8 @@ from dotenv import load_dotenv
 import os
 import tiktoken
 
+from create_doc.utils import check_output_path
+
 
 def init_env():
     load_dotenv()
@@ -37,7 +39,7 @@ def chat_gpt_conversation(conversation, model_id):
     # print(response['choices'][0].finish_reason)
     # print(response['choices'][0].index)
     conversation.append({'role': response.choices[0].message.role, 'content': response.choices[0].message.content})
-    return { 'conversation': conversation, 'tokens_consumed': token_consumed }
+    return {'conversation': conversation, 'tokens_consumed': token_consumed}
 
 
 def init_gpt_html_data_extraction(gpt_prompt):
@@ -74,20 +76,15 @@ def traverse_directory(directory_path):
     return directories
 
 
-def get_all_files_in_directory_and_subdirectories(directory, file_filter):
+def get_all_files_in_directory_and_subdirectories(directory, file_extensions):
     # get all files in directory and its subdirectories with the given file_filter
     file_list = []
     for root, dirs, files in os.walk(directory):
         for file in files:
-            if file.endswith(file_filter):
+            # check if python string ends with a string defined in array file_extensions
+            if file.endswith(tuple(file_extensions)):
                 file_list.append(os.path.join(root, file))
     return file_list
-
-
-def check_output_path(output_path):
-    # check if output_path exists
-    if not os.path.exists(output_path):
-        os.makedirs(output_path)
 
 
 def open_content_markdown(output_path, content_title):
@@ -115,16 +112,15 @@ def add_dependency_markdown(output_file, directory_path):
 
 def open_component_markdown(output_path, directory_path):
     # create path from root_path and directory_path
+    check_output_path(output_path)
     output_file = os.path.join(output_path, directory_path + '.md')
+    print('Creating markdown file: ' + output_file + '...')
     # if output_file exists, delete it
     if os.path.exists(output_file):
         os.remove(output_file)
     # open output file for text writing
     output_file = open(output_file, 'w')
     # write markdown text
-    output_file.write('# ' + directory_path + '\n\n')
-    output_file.write(
-        'Prikaz strukture komponente:[[' + directory_path + '-module-dependency|' + directory_path + ']]\n\n')
     return output_file
 
 
@@ -134,7 +130,7 @@ def add_to_component_markdown(output_file, text):
 
 def close_component_markdown(output_file):
     # close output file
-
+    print('Closing markdown file...')
     output_file.close()
 
 
@@ -145,41 +141,89 @@ def create_title_for_file(file_path):
     file_name = os.path.splitext(file_name)[0]
     # replace _ with space
     file_name = file_name.replace('_', ' ')
-    # if file name ends with '.component', remove it
-    if file_name.endswith('.component'):
-        file_name = file_name[:-len('.component')]
+    file_name = file_name.replace('.', ' ')
+
+    # if file_name.endswith('.component'):
+    #     file_name = file_name[:-len('.component')]
+    # if file_name.endswith('.model'):
+    #     file_name = file_name[:-len('.model')]
+    # if file_name.endswith('.service'):
+    #     file_name = file_name[:-len('.service')]
+
     # capitalize
     file_name = file_name.capitalize()
     return file_name
 
 
-def analyze_html_files(_project_root_directory, _input_directory, _output_directory, _model_id, _model_token_limit,
-                       _gpt_prompt, _skip_router_outlet, _skip_router_outlet_text, _content_title):
+def create_filename_for_title(title):
+    # replace space with _
+    file_name = title.replace(' ', '_')
+    # lowercase
+    file_name = file_name.lower()
+    return file_name
+
+
+def analyze_files(_project_root_directory, _input_directory, _output_directory, _model_id, _model_token_limit,
+                  _gpt_prompt, _skip_router_outlet, _skip_router_outlet_text, _content_title, _file_extensions,
+                  _add_dependency_link, _add_file_path, _dependency_link_text):
     directories = traverse_directory(_input_directory)
+    # if length of directories is 0, add _input_directory to directories
+    process_directories = True
+    if len(directories) == 0:
+        directories.append(_input_directory)
+        process_directories = False
+
     # sort directories
     directories.sort()
     content_file = open_content_markdown(_output_directory, _content_title)
 
+    if _add_dependency_link and _dependency_link_text is not None and len(_dependency_link_text) > 0:
+            _dependency_link_text = _dependency_link_text + ':'
+
     total_tokens = 0
     for directory in directories:
         print('Processing directory: {0} ----------------------'.format(directory))
-        file_list = get_all_files_in_directory_and_subdirectories(os.path.join(_input_directory, directory), '.html')
+        file_list = get_all_files_in_directory_and_subdirectories(
+            os.path.join(_input_directory, directory),
+            _file_extensions)
         # if file list is not empty, process files
         if file_list:
             print('Processing files: ')
-            description_file = open_component_markdown(_output_directory, directory)
-            add_dependency_markdown(content_file, directory)
+            file_list.sort()
+            description_file = None
+            if process_directories:
+                description_file = open_component_markdown(_output_directory, directory)
+                add_dependency_markdown(content_file, directory)
+                add_to_component_markdown(description_file, '# ' + directory + '\n\n')
+                if _add_dependency_link:
+                    add_to_component_markdown(description_file,
+                                              _dependency_link_text +  '[[' + directory + '-module-dependency|' +
+                                              directory + ']]\n\n')
+
             for file in file_list:
                 # create relative file path from project root directory and file
-                file_relative_path = os.path.relpath(file, _project_root_directory)
-
                 print(file)
                 title = create_title_for_file(file)
                 print(title)
+                file_relative_path = os.path.relpath(file, _project_root_directory)
+                if not process_directories:
+                    file_name = create_filename_for_title(title)
+                    description_file = open_component_markdown(_output_directory, file_name)
+                    add_dependency_markdown(content_file, file_name)
+                    add_to_component_markdown(description_file, '# ' + title + '\n')
+                    if _add_file_path:
+                        add_to_component_markdown(description_file, 'File: **' + file_relative_path + '**\n')
+
+                    if _add_dependency_link:
+                        add_to_component_markdown(description_file,
+                                                  _dependency_link_text + '[[' + directory + '-module-dependency|'
+                                                  + directory + ']]\n\n')
+
                 file_text = load_text(file)
                 # if file_text contains string <router-outlet> show message that this component contains router-outlet
                 if '<router-outlet>' in file_text:
-                    add_to_component_markdown(description_file, '## ' + title + '\n\n')
+                    add_to_component_markdown(description_file, '# ' + title + '\n\n')
+
                     add_to_component_markdown(description_file, 'File: **' + file_relative_path + '**\n')
                     add_to_component_markdown(description_file, _skip_router_outlet_text)
                 else:
@@ -191,8 +235,11 @@ def analyze_html_files(_project_root_directory, _input_directory, _output_direct
                         print('----------------------')
                         print('{0}\n'.format(result['conversation'][-1]['content'].strip()))
 
-                        add_to_component_markdown(description_file, '# ' + title + '\n\n')
-                        add_to_component_markdown(description_file, 'File: **' + file_relative_path + '**\n')
+                        if process_directories:
+                            add_to_component_markdown(description_file, '## ' + title + '\n\n')
+                            if _add_file_path:
+                                add_to_component_markdown(description_file, 'File: **' + file_relative_path + '**\n')
+
                         add_to_component_markdown(description_file, result['conversation'][-1]['content'].strip())
                         total_tokens += result['tokens_consumed']
                     else:
