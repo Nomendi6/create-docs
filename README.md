@@ -42,23 +42,23 @@ Generate angular project documentation using GPT and dependency-cruiser.
 
 - Create documentation for your project the following command:
 
-        create_doc process_gpt
+        create_doc gpt-process
 
 - You can also run the specific gpt processors with the following commands:
 
-        create_doc process_gpt processor_name
+        create_doc gpt-process processor_name
 
 - for example
 
-        create_doc process_gpt forms
+        create_doc gpt-process forms
 
 - Create documentation for your project dependencies with the following command:
 
-        create_doc process_dependencies
+        create_doc analyze-dependencies
 
 - To run the specific dependency processors use the following commands:
 
-        create_doc process_dependencies processor_name
+        create_doc analyze-dependencies processor_name
 
 ### Credits
 
