@@ -22,44 +22,47 @@ def init():
             exit()
 
     json_data = {
-                "project_root_path": "",
-                "output_path": "docs",
-                "gpt_processors": [
+        "project_root_path": "",
+        "output_path": "docs",
+        "gpt_processors": [
+            {
+                "name": "forms",
+                "input_paths": ["src"],
+                "output_sub_path": "forms",
+                "file_extensions": [".html"],
+                "gpt_model_id": "gpt-3.5-turbo",
+                "gpt_model_token_limit": 4096,
+                "gpt_prompts": [
                     {
-                        "name": "forms",
-                        "input_paths": ["src"],
-                        "output_sub_path": "forms",
-                        "file_extensions": [".html"],
-                        "gpt_model_id": "gpt-3.5-turbo",
-                        "gpt_model_token_limit": 4096,
-                        "gpt_prompt": "You are a technical writer of user manuals." +
-                                      "You are working on a project to create application documentation from HTML code." +
-                                      "The result is in markdown format." +
-                                      "The first part of the documentation should contain a concise " +
-                                      "description of the page from a user perspective. " +
-                                      "The second part should contain instructions for using " +
-                                      "the page.",
-                        "gpt_example_prompt": "",
-                        "gpt_example_file_path": "",
-                        "angular_skip_html_router_outlet": True,
-                        "angular_router_outlet_message": "This page contains angular router-outlet tag. " +
-                                                         "This means that this page contains subcomponents.",
-                        "content_title": "Content",
-                        "add_dependency_links": True,
-                        "dependency_link_text": "Dependency",
-                        "add_file_path": True
+                        "role": "system",
+                        "content": "You are a technical writer of user manuals. " +
+                                   "You are working on a project to create application documentation from HTML code. " +
+                                   "The result is in markdown format. " +
+                                   "The first part of the documentation should contain a concise " +
+                                   "description of the page from a user perspective. " +
+                                   "The second part should contain instructions for using the page.",
+                        "content_file_path": ""
                     }
                 ],
-                "dependency_processors": [
-                    {
-                        "name": "typescript",
-                        "input_paths": ["src"],
-                        "output_sub_path": "dependencies",
-                        "summary_depth": 1,
-                        "include_only": "^src",
-                    }
-                ]
+                "angular_skip_html_router_outlet": True,
+                "angular_router_outlet_message": "This page contains angular router-outlet tag. " +
+                                                 "This means that this page contains subcomponents.",
+                "content_title": "Content",
+                "add_dependency_links": True,
+                "dependency_link_text": "Dependency",
+                "add_file_path": True
             }
+        ],
+        "dependency_processors": [
+            {
+                "name": "typescript",
+                "input_paths": ["src"],
+                "output_sub_path": "dependencies",
+                "summary_depth": 1,
+                "include_only": "^src",
+            }
+        ]
+    }
 
     with open('./.create_doc.json', 'w') as file:
         json.dump(json_data, file, indent=4)
@@ -115,12 +118,11 @@ def gpt_process_processor(processor, config):
         click.echo('Processing path ' + path)
         # analyze html files
         gpt.analyze_files(config['project_root_path'], path, output_path, processor['gpt_model_id'],
-                          processor['gpt_model_token_limit'], processor['gpt_prompt'],
+                          processor['gpt_model_token_limit'], processor['gpt_prompts'],
                           processor['angular_skip_html_router_outlet'], processor['angular_router_outlet_message'],
                           processor['content_title'], processor['file_extensions'],
                           processor['add_dependency_links'], processor['add_file_path'],
-                          processor['dependency_link_text'], processor['gpt_example_prompt'],
-                          processor['gpt_example_file_path'])
+                          processor['dependency_link_text'])
 
 
 @cli.command()

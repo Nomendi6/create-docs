@@ -141,13 +141,12 @@ class TestCreate_doc(unittest.TestCase):
         output_path = config['output_path'] + '/' + processor['output_sub_path']
         result = gpt.analyze_files(config['project_root_path'], path, output_path,
                                    processor['gpt_model_id'],
-                                   processor['gpt_model_token_limit'], processor['gpt_prompt'],
+                                   processor['gpt_model_token_limit'], processor['gpt_prompts'],
                                    processor['angular_skip_html_router_outlet'],
                                    processor['angular_router_outlet_message'],
                                    processor['content_title'], processor['file_extensions'],
                                    processor['add_dependency_links'], processor['add_file_path'],
-                                   processor['dependency_link_text'], processor['gpt_example_prompt'],
-                                   processor['gpt_example_file_path']
+                                   processor['dependency_link_text']
                                    )
         assert result == 0
 

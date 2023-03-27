@@ -10,6 +10,28 @@ Generate angular project documentation using GPT and dependency-cruiser.
 
 - Create module dependency documentation using dependency-cruiser static code analysis.
 
+### Installation
+
+- Install the package with pip:
+
+        pip install create_doc
+
+- Define the following environment variables:
+
+        OPENAI_API_KEY: Your OpenAI API key
+
+- Install the following tools used by the processors:
+  - Install dependency-cruiser in the project you want to analyze
+
+
+        npm install dependency-cruiser
+
+  - or install dependency-cruiser globally to use it in other projects (it will show some warnings during processing
+
+        npm install -g dependency-cruiser
+
+
+
 ### Usage
 
 - Initialize a project with the following command:
@@ -40,9 +62,18 @@ Generate angular project documentation using GPT and dependency-cruiser.
 
 ### Credits
 
+OpenAI API is used to generate the documentation.
+
+- OpenAI API: https://openai.com/
+
+Dependency-cruiser is used to analyze the dependencies of the project.
+
+- Dependency-cruiser: https://github.com/sverweij/dependency-cruiser
+
+Example angular form from https://github.com/gothinkster/angular-realworld-example-app
+
 This package was created with Cookiecutter_ and the `audreyr/cookiecutter-pypackage`_ project template.
 
 - Cookiecutter: https://github.com/audreyr/cookiecutter
 - `audreyr/cookiecutter-pypackage`: https://github.com/audreyr/cookiecutter-pypackage
 
-Example angular form from https://github.com/gothinkster/angular-realworld-example-app
