@@ -87,7 +87,7 @@ class TestCreate_doc(unittest.TestCase):
             result = runner.invoke(cli.init)
 
         runner = CliRunner()
-        result = runner.invoke(cli.process_dependencies)
+        result = runner.invoke(cli.analyze_dependencies)
         assert result.exit_code == 0
 
     def test_process_dependencies_typescript(self):
@@ -98,7 +98,7 @@ class TestCreate_doc(unittest.TestCase):
             result = runner.invoke(cli.init)
 
         runner = CliRunner()
-        result = runner.invoke(cli.process_dependencies, ['typescript'])
+        result = runner.invoke(cli.analyze_dependencies, ['typescript'])
         assert result.exit_code == 0
 
     def test_process_dependencies_unknown(self):
@@ -109,7 +109,7 @@ class TestCreate_doc(unittest.TestCase):
             result = runner.invoke(cli.init)
 
         runner = CliRunner()
-        result = runner.invoke(cli.process_dependencies, ['unknown'])
+        result = runner.invoke(cli.analyze_dependencies, ['unknown'])
         assert 'Processor unknown not found' in result.output
 
     def test_os_environment(self):
@@ -146,7 +146,8 @@ class TestCreate_doc(unittest.TestCase):
                                    processor['angular_router_outlet_message'],
                                    processor['content_title'], processor['file_extensions'],
                                    processor['add_dependency_links'], processor['add_file_path'],
-                                   processor['dependency_link_text']
+                                   processor['dependency_link_text'], processor['gpt_example_prompt'],
+                                   processor['gpt_example_file_path']
                                    )
         assert result == 0
 

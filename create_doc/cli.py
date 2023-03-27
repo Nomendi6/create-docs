@@ -39,6 +39,8 @@ def init():
                                       "description of the page from a user perspective. " +
                                       "The second part should contain instructions for using " +
                                       "the page.",
+                        "gpt_example_prompt": "",
+                        "gpt_example_file_path": "",
                         "angular_skip_html_router_outlet": True,
                         "angular_router_outlet_message": "This page contains angular router-outlet tag. " +
                                                          "This means that this page contains subcomponents.",
@@ -117,7 +119,8 @@ def gpt_process_processor(processor, config):
                           processor['angular_skip_html_router_outlet'], processor['angular_router_outlet_message'],
                           processor['content_title'], processor['file_extensions'],
                           processor['add_dependency_links'], processor['add_file_path'],
-                          processor['dependency_link_text'])
+                          processor['dependency_link_text'], processor['gpt_example_prompt'],
+                          processor['gpt_example_file_path'])
 
 
 @cli.command()

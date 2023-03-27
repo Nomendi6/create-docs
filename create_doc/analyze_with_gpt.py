@@ -42,10 +42,14 @@ def chat_gpt_conversation(conversation, model_id):
     return {'conversation': conversation, 'tokens_consumed': token_consumed}
 
 
-def init_gpt_html_data_extraction(gpt_prompt):
-    return [{'role': 'system',
-             'content': gpt_prompt
-             }]
+def init_gpt_with_system_prompt(gpt_prompt, has_example_prompt, _gpt_example_prompt, example_text):
+    _conversation = []
+    if has_example_prompt:
+        _conversation.append({'role': 'system', 'content': _gpt_example_prompt})
+        _conversation.append({'role': 'system', 'content': example_text})
+
+    _conversation.append({'role': 'system', 'content': gpt_prompt})
+    return _conversation
 
 
 def num_tokens_from_messages(messages, model):
@@ -165,7 +169,8 @@ def create_filename_for_title(title):
 
 def analyze_files(_project_root_directory, _input_directory, _output_directory, _model_id, _model_token_limit,
                   _gpt_prompt, _skip_router_outlet, _skip_router_outlet_text, _content_title, _file_extensions,
-                  _add_dependency_link, _add_file_path, _dependency_link_text):
+                  _add_dependency_link, _add_file_path, _dependency_link_text,
+                  _gpt_example_prompt, _gpt_example_file_path):
     directories = traverse_directory(_input_directory)
     # if length of directories is 0, add _input_directory to directories
     process_directories = True
@@ -181,6 +186,16 @@ def analyze_files(_project_root_directory, _input_directory, _output_directory, 
             _dependency_link_text = _dependency_link_text + ':'
 
     total_tokens = 0
+
+    has_example_prompt = False
+    example_text = ""
+    if (_gpt_example_prompt is not None and len(_gpt_example_prompt) > 0) and (_gpt_example_file_path is not None and len(_gpt_example_file_path) > 0):
+        # load example file
+        example_file = open(_gpt_example_file_path, 'r')
+        example_text = example_file.read()
+        example_file.close()
+        has_example_prompt = True
+
     for directory in directories:
         print('Processing directory: {0} ----------------------'.format(directory))
         file_list = get_all_files_in_directory_and_subdirectories(
@@ -227,7 +242,7 @@ def analyze_files(_project_root_directory, _input_directory, _output_directory, 
                     add_to_component_markdown(description_file, 'File: **' + file_relative_path + '**\n')
                     add_to_component_markdown(description_file, _skip_router_outlet_text)
                 else:
-                    conversation = init_gpt_html_data_extraction(_gpt_prompt)
+                    conversation = init_gpt_with_system_prompt(_gpt_prompt, has_example_prompt, _gpt_example_prompt, example_text)
                     conversation.append({'role': 'user', 'content': file_text})
                     num_tokens = num_tokens_from_messages(conversation, _model_id)
                     if num_tokens <= _model_token_limit:
