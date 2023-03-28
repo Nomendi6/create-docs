@@ -174,7 +174,42 @@ def create_filename_for_title(title):
     return file_name
 
 
-def analyze_files(_project_root_directory, _input_directory, _output_directory, _model_id, _model_token_limit,
+def filter_files(file_list, from_file, to_file):
+    # filter files by from_file and to_file
+    if from_file is not None and len(from_file) > 0:
+        if from_file in file_list:
+            from_file_index = file_list.index(from_file)
+            file_list = file_list[from_file_index:]
+        else:
+            next_file_index = find_index_of_first_next_to_filename(file_list, from_file)
+            file_list = file_list[next_file_index:]
+    if to_file is not None and len(to_file) > 0:
+        if to_file in file_list:
+            to_file_index = file_list.index(to_file)
+            file_list = file_list[:to_file_index + 1]
+        else:
+            next_file_index = find_index_of_last_before_filename(file_list, to_file)
+            file_list = file_list[:next_file_index]
+    return file_list
+
+
+def find_index_of_first_next_to_filename(file_list, from_file):
+    for i, file in enumerate(file_list):
+        if file >= from_file:
+            return i
+
+    return len(file_list)
+
+
+def find_index_of_last_before_filename(file_list, from_file):
+    for i, file in enumerate(file_list):
+        if file >= from_file:
+            return i
+
+    return len(file_list)
+
+
+def analyze_files(_project_root_directory, _input_directory, _output_directory, from_file, to_file, _model_id, _model_token_limit,
                   _gpt_prompts, _skip_router_outlet, _skip_router_outlet_text, _content_title, _file_extensions,
                   _add_dependency_link, _add_file_path, _dependency_link_text
                   ):
@@ -203,6 +238,9 @@ def analyze_files(_project_root_directory, _input_directory, _output_directory, 
         if file_list:
             print('Processing files: ')
             file_list.sort()
+            if (from_file is not None and len(from_file) > 0) or (to_file is not None and len(to_file) > 0):
+                file_list = filter_files(file_list, from_file, to_file)
+
             description_file = None
             if process_directories:
                 description_file = open_component_markdown(_output_directory, directory)

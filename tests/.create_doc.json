@@ -11,6 +11,8 @@
             "file_extensions": [
                 ".html"
             ],
+            "from_file": "",
+            "to_file": "",
             "gpt_model_id": "gpt-3.5-turbo",
             "gpt_model_token_limit": 4096,
             "gpt_prompts": [

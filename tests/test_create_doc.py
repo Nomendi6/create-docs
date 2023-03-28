@@ -139,7 +139,9 @@ class TestCreate_doc(unittest.TestCase):
         gpt.init_env()
         path = processor['input_paths'][0]
         output_path = config['output_path'] + '/' + processor['output_sub_path']
-        result = gpt.analyze_files(config['project_root_path'], path, output_path,
+        from_file = processor.get('from_file')
+        to_file = processor.get('to_file')
+        result = gpt.analyze_files(config['project_root_path'], path, output_path, from_file, to_file,
                                    processor['gpt_model_id'],
                                    processor['gpt_model_token_limit'], processor['gpt_prompts'],
                                    processor['angular_skip_html_router_outlet'],
@@ -169,3 +171,15 @@ class TestCreate_doc(unittest.TestCase):
         result = gpt.get_all_files_in_directory_and_subdirectories(config['project_root_path'],
                                                                    ['.html', '.ts'])
         assert result is not None
+
+    def test_from_file_to_file(self):
+        """Test from file to file."""
+        files = ['file1', 'file2', 'file3', 'file4', 'file5', 'file6', 'file7', 'file8', 'file9', 'file10']
+        result = gpt.filter_files(files, 'file3', 'file5')
+        assert result == ['file3', 'file4', 'file5']
+
+    def test_from_file_to_file_with_first_not_exist(self):
+        """Test from file to file with first not exist."""
+        files = ['file1', 'file2', 'file3', 'file4', 'file5', 'file6', 'file7', 'file8', 'file9', 'file10']
+        result = gpt.filter_files(files, 'file2a', 'file5b')
+        assert result == ['file3', 'file4', 'file5']
