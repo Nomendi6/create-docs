@@ -11,6 +11,8 @@
             "file_extensions": [
                 ".html"
             ],
+            "from_dir": "",
+            "to_dir": "",
             "from_file": "",
             "to_file": "",
             "gpt_model_id": "gpt-3.5-turbo",

@@ -32,6 +32,8 @@ def init():
                 "input_paths": ["src"],
                 "output_sub_path": "forms",
                 "file_extensions": [".html"],
+                "from_dir": "",
+                "to_dir": "",
                 "from_file": "",
                 "to_file": "",
                 "gpt_model_id": "gpt-3.5-turbo",
@@ -118,13 +120,15 @@ def gpt_process_processor(processor, config):
     click.echo('Processing processor ' + processor['name'])
     # for all paths in processor input paths
     output_path = config['output_path'] + '/' + processor['output_sub_path']
+    from_dir = processor.get('from_dir')
+    to_dir = processor.get('to_dir')
     from_file = processor.get('from_file')
     to_file = processor.get('to_file')
     for path in processor['input_paths']:
         click.echo('Processing path ' + path)
         # analyze html files
-        gpt.analyze_files(config['project_root_path'], path, output_path, from_file, to_file, processor['gpt_model_id'],
-                          processor['gpt_model_token_limit'], processor['gpt_prompts'],
+        gpt.analyze_files(config['project_root_path'], path, output_path, from_dir, to_dir, from_file, to_file,
+                          processor['gpt_model_id'], processor['gpt_model_token_limit'], processor['gpt_prompts'],
                           processor['angular_skip_html_router_outlet'], processor['angular_router_outlet_message'],
                           processor['content_title'], processor['file_extensions'],
                           processor['add_dependency_links'], processor['add_file_path'],
