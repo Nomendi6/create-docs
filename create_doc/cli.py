@@ -59,6 +59,37 @@ def init():
                 "add_file_path": True
             }
         ],
+        "applipress_processors": [
+            {
+                "name": "forms",
+                "input_paths": ["src"],
+                "output_sub_path": "forms",
+                "file_extensions": [".html"],
+                "from_form": "",
+                "to_form": "",
+                "gpt_model_id": "gpt-3.5-turbo",
+                "gpt_model_token_limit": 4096,
+                "gpt_prompts": [
+                    {
+                        "role": "system",
+                        "content": "You are a technical writer of user manuals. " +
+                                   "You are working on a project to create application documentation from HTML code. " +
+                                   "The result is in markdown format. " +
+                                   "The first part of the documentation should contain a concise " +
+                                   "description of the page from a user perspective. " +
+                                   "The second part should contain instructions for using the page.",
+                        "content_file_path": ""
+                    }
+                ],
+                "angular_skip_html_router_outlet": True,
+                "angular_router_outlet_message": "This page contains angular router-outlet tag. " +
+                                                 "This means that this page contains subcomponents.",
+                "content_title": "Content",
+                "add_dependency_links": True,
+                "dependency_link_text": "Dependency",
+                "add_file_path": True
+            }
+        ],
         "dependency_processors": [
             {
                 "name": "typescript",
@@ -134,6 +165,55 @@ def gpt_process_processor(processor, config):
                           processor['add_dependency_links'], processor['add_file_path'],
                           processor['dependency_link_text'])
 
+
+@cli.command()
+@click.argument('processor_name', type=str, default='all')
+def applipress_process(processor_name):
+    """Process applipress forms with GPT and create markdown files."""
+    click.echo('GPT processing applipress forms...')
+    click.echo('Using ' + str(processor_name) + ' processor(s)')
+
+    check_openapi_key()
+    config = get_config()
+    gpt.init_env()
+
+    if processor_name == 'all':
+        for processor in config['applipress_processors']:
+            applipress_process_processor(processor, config)
+    else:
+        processor = None
+
+        # find processor by name in config['gpt_processors']
+        for p in config['applipress_processors']:
+            if p['name'] == processor_name:
+                processor = p
+                break
+
+        if processor is not None:
+            applipress_process_processor(processor, config)
+        else:
+            click.echo('Processor ' + processor_name + ' not found.')
+            return 1
+
+    click.echo('Done GPT processing applipress forms')
+    return 0
+
+
+def applipress_process_processor(processor, config):
+    click.echo('Processing processor ' + processor['name'])
+    # for all paths in processor input paths
+    output_path = config['output_path'] + '/' + processor['output_sub_path']
+    from_form = processor.get('from_form')
+    to_form = processor.get('to_form')
+    for path in processor['input_paths']:
+        click.echo('Processing path ' + path)
+        # analyze html files
+        gpt.analyze_applipress_forms(config['project_root_path'], path, output_path, from_form, to_form,
+                          processor['gpt_model_id'], processor['gpt_model_token_limit'], processor['gpt_prompts'],
+                          processor['angular_skip_html_router_outlet'], processor['angular_router_outlet_message'],
+                          processor['content_title'], processor['file_extensions'],
+                          processor['add_dependency_links'], processor['add_file_path'],
+                          processor['dependency_link_text'])
 
 @cli.command()
 @click.argument('processor_name', type=str, default='all')

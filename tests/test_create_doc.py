@@ -79,6 +79,17 @@ class TestCreate_doc(unittest.TestCase):
         result = runner.invoke(cli.gpt_process, ['unknown'])
         assert 'Processor unknown not found' in result.output
 
+    def test_applipress_process_forms(self):
+        """Test the CLI."""
+
+        runner = CliRunner()
+        if not os.path.exists('./.create_doc.json'):
+            result = runner.invoke(cli.init)
+
+        runner = CliRunner()
+        result = runner.invoke(cli.applipress_process, ['forms'])
+        assert result.exit_code == 0
+
     def test_process_dependencies(self):
         """Test the CLI."""
 
@@ -185,3 +196,50 @@ class TestCreate_doc(unittest.TestCase):
         files = ['file1', 'file2', 'file3', 'file4', 'file5', 'file6', 'file7', 'file8', 'file9', 'file10']
         result = gpt.filter_list(files, 'file2a', 'file5b')
         assert result == ['file3', 'file4', 'file5']
+
+    def test_extract_forms_from_json_file(self):
+        """Test extract forms from json file."""
+        _project_root_directory = './'
+        _input_directory = '.jhipster/forms'
+        json_files = gpt.get_all_files_in_directory_and_subdirectories(
+            os.path.join(_project_root_directory, _input_directory),
+            ['.json'])
+
+        result = gpt.extract_forms_from_json_file(json_files[0])
+        assert result == [{'name': 'Unit', 'template': 'table'}, {'name': 'Unit$T', 'template': 'layout-tabs'}, {'name': 'Unit$D$1', 'template': 'form'}]
+
+    def test_convert_to_kebab_case(self):
+        """Test convert to kebab case."""
+        result = gpt.kebabCase('testConvertToKebabCase')
+        assert result == 'test-convert-to-kebab-case'
+
+        result = gpt.kebabCase('BABillingAccount$Address')
+        assert result == 'ba-billing-account-address'
+
+        result = gpt.kebabCase('BABAAssignedPerson$Det')
+        assert result == 'baba-assigned-person-det'
+
+        result = gpt.kebabCase('CA$BA$BasicInfo')
+        assert result == 'ca-ba-basic-info'
+
+    def test_applipress_sorting(self):
+        json_files = gpt.get_all_files_in_directory_and_subdirectories(
+            os.path.join('/home/vrba/v/setcor/app01new/aportal', '.jhipster/forms'),
+            ['.json'])
+        json_files.sort()
+        json_files = gpt.filter_file_paths_with_filename(json_files, 'CustomerFormD', '')
+
+        for json_file in json_files:
+            form_names = gpt.extract_forms_from_json_file(json_file)
+            description_file = None
+
+    def test_filter_out_filepaths_with_bck(self):
+        """Test filter out filepaths with bck."""
+        files = ['file1', 'file_bck_2', 'fil_bck_e3', 'file4']
+        result = gpt.filter_out_filepaths_with_bck(files)
+        assert result == ['file1', 'file4']
+
+        files = ['file1', 'fileBck2', 'filBcke3', 'file4']
+        result = gpt.filter_out_filepaths_with_bck(files)
+        assert result == ['file1', 'file4']
+
