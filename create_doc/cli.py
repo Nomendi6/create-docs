@@ -67,6 +67,7 @@ def init():
                 "file_extensions": [".html"],
                 "from_form": "",
                 "to_form": "",
+                "thread_count": 1,
                 "gpt_model_id": "gpt-3.5-turbo",
                 "gpt_model_token_limit": 4096,
                 "gpt_prompts": [
@@ -238,7 +239,7 @@ def applipress_process_processor(processor, config):
                           processor['angular_skip_html_router_outlet'], processor['angular_router_outlet_message'],
                           processor['content_title'], processor['file_extensions'],
                           processor['add_dependency_links'], processor['add_file_path'],
-                          processor['dependency_link_text'])
+                          processor['dependency_link_text'], processor['thread_count'])
 
 @cli.command()
 @click.argument('processor_name', type=str, default='all')
