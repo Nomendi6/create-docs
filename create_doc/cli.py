@@ -81,6 +81,30 @@ def init():
                         "content_file_path": ""
                     }
                 ],
+                "gpt_prompts_subcomponent": [
+                    {
+                        "role": "system",
+                        "content": "You are a technical writer of user manuals. " +
+                                   "You are working on a project to create application documentation from HTML code. " +
+                                   "The result is in markdown format. " +
+                                   "The first part of the documentation should contain a concise " +
+                                   "description of the page from a user perspective. " +
+                                   "The second part should contain instructions for using the page.",
+                        "content_file_path": ""
+                    }
+                ],
+                "gpt_prompts_layout": [
+                    {
+                        "role": "system",
+                        "content": "You are a technical writer of user manuals. " +
+                                   "You are working on a project to create application documentation from HTML code. " +
+                                   "The result is in markdown format. " +
+                                   "The first part of the documentation should contain a concise " +
+                                   "description of the page from a user perspective. " +
+                                   "The second part should contain instructions for using the page.",
+                        "content_file_path": ""
+                    }
+                ],
                 "angular_skip_html_router_outlet": True,
                 "angular_router_outlet_message": "This page contains angular router-outlet tag. " +
                                                  "This means that this page contains subcomponents.",
@@ -209,7 +233,8 @@ def applipress_process_processor(processor, config):
         click.echo('Processing path ' + path)
         # analyze html files
         gpt.analyze_applipress_forms(config['project_root_path'], path, output_path, from_form, to_form,
-                          processor['gpt_model_id'], processor['gpt_model_token_limit'], processor['gpt_prompts'],
+                          processor['gpt_model_id'], processor['gpt_model_token_limit'],
+                          processor['gpt_prompts'], processor.get('gpt_prompts_subcomponent'), processor.get('gpt_prompts_layout'),
                           processor['angular_skip_html_router_outlet'], processor['angular_router_outlet_message'],
                           processor['content_title'], processor['file_extensions'],
                           processor['add_dependency_links'], processor['add_file_path'],

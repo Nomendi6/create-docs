@@ -43,10 +43,24 @@
                 ".html"
             ],
             "from_form": "",
-            "to_form": "Unit",
+            "to_form": "",
             "gpt_model_id": "gpt-3.5-turbo",
             "gpt_model_token_limit": 4096,
             "gpt_prompts": [
+                {
+                    "role": "system",
+                    "content": "You are a technical writer of user manuals. You are working on a project to create application documentation from HTML code. The result is in markdown format. The first part of the documentation should contain a concise description of the page from a user perspective. The second part should contain instructions for using the page.",
+                    "content_file_path": ""
+                }
+            ],
+            "gpt_prompts_subcomponent": [
+                {
+                    "role": "system",
+                    "content": "You are a technical writer of user manuals. You are working on a project to create application documentation from HTML code. The result is in markdown format. The first part of the documentation should contain a concise description of the page from a user perspective. The second part should contain instructions for using the page.",
+                    "content_file_path": ""
+                }
+            ],
+            "gpt_prompts_layout": [
                 {
                     "role": "system",
                     "content": "You are a technical writer of user manuals. You are working on a project to create application documentation from HTML code. The result is in markdown format. The first part of the documentation should contain a concise description of the page from a user perspective. The second part should contain instructions for using the page.",

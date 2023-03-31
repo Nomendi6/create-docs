@@ -206,7 +206,32 @@ class TestCreate_doc(unittest.TestCase):
             ['.json'])
 
         result = gpt.extract_forms_from_json_file(json_files[0])
-        assert result == [{'name': 'Unit', 'template': 'table'}, {'name': 'Unit$T', 'template': 'layout-tabs'}, {'name': 'Unit$D$1', 'template': 'form'}]
+        assert result == [{'name': 'BillingAccount', 'template': 'table', 'title': 'Billing Accounts',
+                           'subforms': ['Billing Account Details']},
+                          {'name': 'BATabs', 'template': 'layout-tabs', 'title': 'Billing Account Details',
+                           'subforms': ['Billing Account', 'Environments']},
+                          {'name': 'BABillingAccount', 'template': 'layout-accordion', 'title': 'Billing Account',
+                           'subforms': ['Basic Info', 'Address', 'Status', 'Assigned Persons']},
+                          {'name': 'BABillingAccountBasicInfo', 'template': 'form', 'title': 'Basic Info',
+                           'subforms': []},
+                          {'name': 'BABillingAccount$adr', 'template': 'form', 'title': 'Address', 'subforms': []},
+                          {'name': 'BABillingAccountStatus', 'template': 'form', 'title': 'Status', 'subforms': []},
+                          {'name': 'BABillingAccountAssignedPersons', 'template': 'table', 'title': 'Assigned Persons',
+                           'subforms': ['Assigned Person Details']},
+                          {'name': 'BABAAssignedPersonTab', 'template': 'layout-tabs',
+                           'title': 'Assigned Person Details', 'subforms': ['Details', 'Roles']},
+                          {'name': 'BABAAssignedPersonDet', 'template': 'form', 'title': 'Details', 'subforms': []},
+                          {'name': 'BABAAssignedPersonRoles', 'template': 'table', 'title': 'Roles',
+                           'subforms': ['Role Details']},
+                          {'name': 'BABAAssignedPersonRoleDet', 'template': 'form', 'title': 'Role Details',
+                           'subforms': []}, {'name': 'CAServiceAccounts', 'template': 'table', 'title': 'Environments',
+                                             'subforms': ['Environment Details']},
+                          {'name': 'CaBaTabs', 'template': 'layout-tabs', 'title': 'Environment Details',
+                           'subforms': ['Environment']},
+                          {'name': 'CaBaAccordtion', 'template': 'layout-accordion', 'title': 'Environment',
+                           'subforms': ['Basic Info', 'Status']},
+                          {'name': 'CaBaBasicInfo', 'template': 'form', 'title': 'Basic Info', 'subforms': []},
+                          {'name': 'CaBaStatus', 'template': 'form', 'title': 'Status', 'subforms': []}]
 
     def test_convert_to_kebab_case(self):
         """Test convert to kebab case."""

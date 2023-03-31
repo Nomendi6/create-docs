@@ -15,30 +15,62 @@ def init_env():
     return openai.api_key
 
 
-def get_template_directories(template_name):
+def get_template_description(template_name):
     template_defs = [
-        {'name': 'default', 'dirs': ['list', 'detail', 'update', 'delete']},
-        {'name': 'form', 'dirs': ['update']},
-        {'name': 'form-routable', 'dirs': ['update']},
-        {'name': 'form-with-status', 'dirs': ['update']},
-        {'name': 'layout-accordion', 'dirs': ['layout']},
-        {'name': 'layout-column', 'dirs': []},
-        {'name': 'layout-hsplitter', 'dirs': []},
-        {'name': 'layout-panel', 'dirs': []},
-        {'name': 'layout-rows2', 'dirs': []},
-        {'name': 'layout-tabs', 'dirs': []},
-        {'name': 'layout-top-tabs', 'dirs': []},
-        {'name': 'png-table', 'dirs': ['list', 'detail', 'update', 'delete']},
-        {'name': 'png-table-c', 'dirs': ['list']},
-        {'name': 'table', 'dirs': ['list']},
-        {'name': 'wizard-form', 'dirs': ['update']}
+        {'name': 'default', 'dirs': ['list', 'detail', 'update', 'delete'], 'algorithm': None},
+        {'name': 'form', 'dirs': ['update'], 'algorithm': None},
+        {'name': 'form-routable', 'dirs': ['update'], 'algorithm': None},
+        {'name': 'form-with-status', 'dirs': ['update'], 'algorithm': None},
+        {'name': 'layout-accordion', 'dirs': ['layout'], 'algorithm': 'panels'},
+        {'name': 'layout-column', 'dirs': ['layout'], 'algorithm': 'panels'},
+        {'name': 'layout-hsplitter', 'dirs': ['layout'], 'algorithm': 'rows'},
+        {'name': 'layout-panel', 'dirs': ['layout'], 'algorithm': 'panels'},
+        {'name': 'layout-rows2', 'dirs': ['layout'], 'algorithm': 'rows'},
+        {'name': 'layout-tabs', 'dirs': ['layout'], 'algorithm': 'tabs'},
+        {'name': 'layout-top-tabs', 'dirs': ['layout'], 'algorithm': 'tabs'},
+        {'name': 'png-table', 'dirs': ['list', 'detail', 'update', 'delete'], 'algorithm': None},
+        {'name': 'png-table-c', 'dirs': ['list'], 'algorithm': None},
+        {'name': 'table', 'dirs': ['list'], 'algorithm': None},
+        {'name': 'wizard-form', 'dirs': ['update'], 'algorithm': None}
     ]
     # find the template by name
     template_def = next((x for x in template_defs if x['name'] == template_name), None)
     if template_def:
-        return template_def['dirs']
+        return { 'dirs': template_def['dirs'], 'algorithm': template_def['algorithm']}
     else:
         return []
+
+
+def add_to_markdown_with_algorithm(markdown_file, algorithm, form_name):
+    # switch case depending on algorithm ('panels', 'rows', 'tabs'):
+    if algorithm == 'panels':
+        # add_to_markdown_with_algorithm_panels(markdown_file, form_name)
+        add_to_component_markdown(markdown_file, 'On this control, the following parts are located:')
+        subforms = form_name.get('subforms')
+        if subforms:
+            # for each subform title in form_name['subforms']:
+            for subform in subforms:
+                add_to_component_markdown(markdown_file, '- {0}'.format(subform))
+    elif algorithm == 'rows':
+        # add_to_markdown_with_algorithm_rows(markdown_file, form_name)
+        add_to_component_markdown(markdown_file, 'On this control, the following parts are located:')
+        subforms = form_name.get('subforms')
+        if subforms:
+            # for each subform title in form_name['subforms']:
+            for subform in subforms:
+                add_to_component_markdown(markdown_file, '- {0}'.format(subform))
+
+    elif algorithm == 'tabs':
+        # add_to_markdown_with_algorithm_tabs(markdown_file, form_name)
+        add_to_component_markdown(markdown_file, 'The following tabs are available on this tab control:')
+        subforms = form_name.get('subforms')
+        if subforms:
+            # for each subform title in form_name['subforms']:
+            for subform in subforms:
+                add_to_component_markdown(markdown_file, '- {0}'.format(subform))
+
+    else:
+        print('No algorithm found for template')
 
 
 def load_text(filepath):
@@ -254,7 +286,6 @@ def filter_out_filepaths_with_bck(filepath_list):
     return [file for file in filepath_list if 'bck' not in file.lower()]
 
 
-
 def find_index_of_first_next_to_filename(file_list, from_file):
     for i, file in enumerate(file_list):
         if file >= from_file:
@@ -271,7 +302,6 @@ def find_index_of_first_next_to_filename_without_path(filepath_list, from_file):
             return i
 
     return len(file_list)
-
 
 
 def find_index_of_first_next_to_filename_object(file_list, from_file):
@@ -427,9 +457,14 @@ def extract_name_properties(json_data):
 
 def extract_names(data):
     names = []
+    subforms = []
+
+    if 'subforms' in data['body']:
+        for subform in data['body']['subforms']:
+            subforms.append(subform['title'])
 
     if 'name' in data:
-        names.append({"name": data['name'], "template": data['body']['template']})
+        names.append({"name": data['name'], "template": data['body']['template'], "title": data['title'], "subforms": subforms})
 
     if 'subforms' in data['body']:
         for subform in data['body']['subforms']:
@@ -463,7 +498,8 @@ def kebabCase(string):
 
 def analyze_applipress_forms(_project_root_directory, _input_directory, _output_directory, from_form, to_form,
                              _model_id, _model_token_limit,
-                             _gpt_prompts, _skip_router_outlet, _skip_router_outlet_text, _content_title,
+                             _gpt_prompts, _gpt_prompts_subcomponent, _gpt_prompts_layout,
+                             _skip_router_outlet, _skip_router_outlet_text, _content_title,
                              _file_extensions,
                              _add_dependency_link, _add_file_path, _dependency_link_text
                              ):
@@ -492,32 +528,67 @@ def analyze_applipress_forms(_project_root_directory, _input_directory, _output_
             dir_names = [kebabCase(form_name['name'])]
             if index == 0:
                 print('Processing form: {0} ----------------------'.format(form_name['name']))
-                description_file = open_component_markdown(_output_directory, root_form)
                 root_form = kebabCase(form_name['name'])
-                dir_names = get_template_directories(form_name['template'])
-                if len(dir_names) > 0:
+                description_file = open_component_markdown(_output_directory, root_form)
+                template_description = get_template_description(form_name['template'])
+                dir_names = template_description['dirs']
+                if template_description['algorithm'] is not None:
                     add_content_markdown(content_file, root_form, form_name['name'])
-                    add_to_component_markdown(description_file, '# ' + form_name['name'] + '\n\n')
+                    add_to_component_markdown(description_file, '# ' + form_name['title'] + '\n\n')
+                    add_to_markdown_with_algorithm(description_file, template_description['algorithm'], form_name)
+                elif len(dir_names) > 0:
+                    gpt_prompts = _gpt_prompts
+                    if dir_names[0] == 'layout' and _gpt_prompts_layout is not None:
+                        gpt_prompts = _gpt_prompts_layout
+                    add_content_markdown(content_file, root_form, form_name['name'])
+                    add_to_component_markdown(description_file, '# ' + form_name['title'] + '\n\n')
                     for dir_name in dir_names:
-                        form_path = os.path.join(_project_root_directory, 'src/main/webapp/app/forms', root_form, dir_name)
-                        process_form_directory(form_path, description_file, _model_id, _model_token_limit, _gpt_prompts,
+                        form_path = os.path.join(_project_root_directory, 'src/main/webapp/app/forms', root_form,
+                                                 dir_name)
+                        process_form_directory(form_path, description_file, _model_id, _model_token_limit, gpt_prompts,
                                                _skip_router_outlet, _skip_router_outlet_text)
             else:
-                subform_dirs = get_template_directories(form_name['template'])
-                if len(subform_dirs) > 0:
+                template_description = get_template_description(form_name['template'])
+                subform_dirs = template_description['dirs']
+                if template_description['algorithm'] is not None:
+                    add_to_component_markdown(description_file, '## ' + form_name['title'] + '\n\n')
+                    add_to_markdown_with_algorithm(description_file, template_description['algorithm'], form_name)
+                elif len(subform_dirs) > 0:
                     dir_name = kebabCase(form_name['name'])
                     print('Processing subform: {0} ----------------------'.format(form_name['name']))
-                    add_to_component_markdown(description_file, '## ' + form_name['name'] + '\n\n')
+                    add_to_component_markdown(description_file, '## ' + form_name['title'] + '\n\n')
                     form_path = os.path.join(_project_root_directory, 'src/main/webapp/app/forms', root_form, dir_name)
-                    process_form_directory(form_path, description_file, _model_id, _model_token_limit, _gpt_prompts,
+                    gpt_prompts = _gpt_prompts
+                    if _gpt_prompts_subcomponent is not None and len(_gpt_prompts_subcomponent) > 0:
+                        gpt_prompts = _gpt_prompts_subcomponent
+                    process_form_directory(form_path, description_file, _model_id, _model_token_limit, gpt_prompts,
                                            _skip_router_outlet, _skip_router_outlet_text)
 
         if description_file is not None:
             close_component_markdown(description_file)
+            rewrite_file_with_gpt(_output_directory, root_form)
 
     close_content_markdown(content_file)
     print('Total tokens consumed: {0}'.format(total_tokens))
     return 0
+
+
+def rewrite_file_with_gpt(_output_directory, _file_name):
+    file_path = os.path.join(_output_directory, _file_name + '.md')
+    existing_markdown = load_text(file_path)
+    description_file = open_component_markdown(_output_directory, _file_name)
+    conversation = init_gpt_with_config_prompts([{'role': 'user',
+                                                  'content': 'Please improve the clarity, readability, and coherence of this text while maintaining its original meaning, at the begining write a summary of form functionalities:'}])
+    conversation.append({'role': 'user', 'content': existing_markdown})
+    num_tokens = num_tokens_from_messages(conversation, 'gpt-3.5-turbo')
+    if num_tokens <= 4096:
+        result = chat_gpt_conversation(conversation, 'gpt-3.5-turbo')
+        add_to_component_markdown(description_file, result['conversation'][-1]['content'].strip())
+        close_component_markdown(description_file)
+    else:
+        result = chat_gpt_conversation(conversation, 'gpt-4')
+        add_to_component_markdown(description_file, result['conversation'][-1]['content'].strip())
+        close_component_markdown(description_file)
 
 
 def process_form_directory(_form_dir_path, _description_file, _model_id, _model_token_limit, _gpt_prompts,
@@ -529,7 +600,7 @@ def process_form_directory(_form_dir_path, _description_file, _model_id, _model_
     _file_extensions = ['.html']
     directories = traverse_directory(_form_dir_path)
     if directories is None or len(directories) == 0:
-        directories = [ _form_dir_path]
+        directories = [_form_dir_path]
     directories.sort()
     for directory in directories:
         file_list = get_all_files_in_directory_and_subdirectories(

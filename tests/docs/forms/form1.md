@@ -13,20 +13,21 @@ Dependency:[[form1-module-dependency|form1]]
 File: **src/form1/editor.component.html**
 
 
-# Article Editor Page
+# Editor Page
 
-This page allows you to create and publish articles with ease.
+The editor page is used to create and publish articles. It consists of an article form that allows the user to input the necessary information to create an article.
 
-## Instructions
+## Using the Editor Page
 
-To create a new article, follow these steps:
+To use the editor page, follow these steps:
 
-1. Enter the title of your article in the "Article Title" input field.
-2. Enter a brief description of your article in the "What's this article about?" input field.
-3. Write your article in markdown syntax in the "Write your article (in markdown)" text area.
-4. Optionally, you can add tags to your article by entering them in the "Enter tags" input field and pressing enter.
-5. Once you have finished creating your article, click the "Publish Article" button to make it available to the public.
-6. If there are any errors while submitting the form, they will be displayed in the "Errors" section on the page. 
+1. Enter the article title in the "Article Title" input field.
+2. Enter a short description of the article in the "What's this article about?" input field.
+3. Write the article using Markdown syntax in the "Write your article (in markdown)" text area.
+4. Enter tags relevant to the article topic in the "Enter tags" input field and press enter.
+5. The tags will be displayed as "tag-default tag-pill" in the "Tag List" section.
+6. Press the "Publish Article" button to submit the article.
+7. If there are errors in the input fields, they will be displayed in the "List Errors" section. Fix the errors and resubmit the article. 
 
-Note: The form is disabled while your article is being published to prevent any unwanted changes.
+Note: When inputting tags, ensure that they are relevant to the article topic to increase the article's visibility.
 
