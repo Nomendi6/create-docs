@@ -1,5 +1,6 @@
 import json
 import re
+from concurrent.futures.thread import ThreadPoolExecutor
 
 import openai
 from dotenv import load_dotenv
@@ -167,10 +168,26 @@ def open_content_markdown(output_path, content_title):
     if os.path.exists(output_file):
         os.remove(output_file)
     # open output file for text writing
-    output_file = open(output_file, 'w')
+    output_file = open(output_file, 'w+')
     # write markdown text
     output_file.write('# ' + content_title + '\n')
     return output_file
+
+def sort_content_markdown_alphabetically(content_file):
+    # Read the file contents
+    content_file.seek(0)
+    content = content_file.readlines()
+
+    # Remove newline characters and empty lines
+    sorted_content = [line.strip() for line in sorted(content) if line.strip()]
+
+    # Clear file
+    content_file.seek(0)
+    content_file.truncate()
+
+    # Write sorted content to file
+    for line in sorted_content:
+        content_file.write(line + '\n\n')
 
 
 def add_content_markdown(output_file, directory_path, content_title):
@@ -495,13 +512,66 @@ def kebabCase(string):
 
     return string
 
+def analyze_single_applipress_form(json_file, _output_directory, content_file,
+                                   _project_root_directory, _model_id, _model_token_limit,
+                                   _gpt_prompts, _skip_router_outlet, _skip_router_outlet_text
+                                  ):
+    form_names = extract_forms_from_json_file(json_file)
+    # form_names = filter_dict_with_name(form_names, from_form, to_form)
+    description_file = None
+
+    root_form = ''
+    for index, form_name in enumerate(form_names):
+        dir_names = [kebabCase(form_name['name'])]
+        if index == 0:
+            print('Processing form: {0} ----------------------'.format(form_name['name']))
+            root_form = kebabCase(form_name['name'])
+            description_file = open_component_markdown(_output_directory, root_form)
+            template_description = get_template_description(form_name['template'])
+            dir_names = template_description['dirs']
+            if template_description['algorithm'] is not None:
+                add_content_markdown(content_file, root_form, form_name['name'])
+                add_to_component_markdown(description_file, '# ' + form_name['title'] + '\n\n')
+                add_to_markdown_with_algorithm(description_file, template_description['algorithm'], form_name)
+            elif len(dir_names) > 0:
+                gpt_prompts = _gpt_prompts
+                if dir_names[0] == 'layout' and _gpt_prompts_layout is not None:
+                    gpt_prompts = _gpt_prompts_layout
+                add_content_markdown(content_file, root_form, form_name['name'])
+                add_to_component_markdown(description_file, '# ' + form_name['title'] + '\n\n')
+                for dir_name in dir_names:
+                    form_path = os.path.join(_project_root_directory, 'src/main/webapp/app/forms', root_form,
+                                                dir_name)
+                    process_form_directory(form_path, description_file, _model_id, _model_token_limit, gpt_prompts,
+                                            _skip_router_outlet, _skip_router_outlet_text)
+        else:
+            template_description = get_template_description(form_name['template'])
+            subform_dirs = template_description['dirs']
+            if template_description['algorithm'] is not None:
+                add_to_component_markdown(description_file, '## ' + form_name['title'] + '\n\n')
+                add_to_markdown_with_algorithm(description_file, template_description['algorithm'], form_name)
+            elif len(subform_dirs) > 0:
+                dir_name = kebabCase(form_name['name'])
+                print('Processing subform: {0} ----------------------'.format(form_name['name']))
+                add_to_component_markdown(description_file, '## ' + form_name['title'] + '\n\n')
+                form_path = os.path.join(_project_root_directory, 'src/main/webapp/app/forms', root_form, dir_name)
+                gpt_prompts = _gpt_prompts
+                if _gpt_prompts_subcomponent is not None and len(_gpt_prompts_subcomponent) > 0:
+                    gpt_prompts = _gpt_prompts_subcomponent
+                process_form_directory(form_path, description_file, _model_id, _model_token_limit, gpt_prompts,
+                                        _skip_router_outlet, _skip_router_outlet_text)
+
+    if description_file is not None:
+        close_component_markdown(description_file)
+        rewrite_file_with_gpt(_output_directory, root_form)
+
 
 def analyze_applipress_forms(_project_root_directory, _input_directory, _output_directory, from_form, to_form,
                              _model_id, _model_token_limit,
                              _gpt_prompts, _gpt_prompts_subcomponent, _gpt_prompts_layout,
                              _skip_router_outlet, _skip_router_outlet_text, _content_title,
-                             _file_extensions,
-                             _add_dependency_link, _add_file_path, _dependency_link_text
+                             _file_extensions, _add_dependency_link, _add_file_path,
+                             _dependency_link_text, _thread_count
                              ):
     content_file = open_content_markdown(_output_directory, _content_title)
 
@@ -518,58 +588,32 @@ def analyze_applipress_forms(_project_root_directory, _input_directory, _output_
     json_files = filter_file_paths_with_filename(json_files, from_form, to_form)
     # json_files = filter_out_filepaths_with_bck(json_files)
 
-    for json_file in json_files:
-        form_names = extract_forms_from_json_file(json_file)
-        # form_names = filter_dict_with_name(form_names, from_form, to_form)
-        description_file = None
+    print('Starting tasks with {0} threads'.format(_thread_count))
 
-        root_form = ''
-        for index, form_name in enumerate(form_names):
-            dir_names = [kebabCase(form_name['name'])]
-            if index == 0:
-                print('Processing form: {0} ----------------------'.format(form_name['name']))
-                root_form = kebabCase(form_name['name'])
-                description_file = open_component_markdown(_output_directory, root_form)
-                template_description = get_template_description(form_name['template'])
-                dir_names = template_description['dirs']
-                if template_description['algorithm'] is not None:
-                    add_content_markdown(content_file, root_form, form_name['name'])
-                    add_to_component_markdown(description_file, '# ' + form_name['title'] + '\n\n')
-                    add_to_markdown_with_algorithm(description_file, template_description['algorithm'], form_name)
-                elif len(dir_names) > 0:
-                    gpt_prompts = _gpt_prompts
-                    if dir_names[0] == 'layout' and _gpt_prompts_layout is not None:
-                        gpt_prompts = _gpt_prompts_layout
-                    add_content_markdown(content_file, root_form, form_name['name'])
-                    add_to_component_markdown(description_file, '# ' + form_name['title'] + '\n\n')
-                    for dir_name in dir_names:
-                        form_path = os.path.join(_project_root_directory, 'src/main/webapp/app/forms', root_form,
-                                                 dir_name)
-                        process_form_directory(form_path, description_file, _model_id, _model_token_limit, gpt_prompts,
-                                               _skip_router_outlet, _skip_router_outlet_text)
-            else:
-                template_description = get_template_description(form_name['template'])
-                subform_dirs = template_description['dirs']
-                if template_description['algorithm'] is not None:
-                    add_to_component_markdown(description_file, '## ' + form_name['title'] + '\n\n')
-                    add_to_markdown_with_algorithm(description_file, template_description['algorithm'], form_name)
-                elif len(subform_dirs) > 0:
-                    dir_name = kebabCase(form_name['name'])
-                    print('Processing subform: {0} ----------------------'.format(form_name['name']))
-                    add_to_component_markdown(description_file, '## ' + form_name['title'] + '\n\n')
-                    form_path = os.path.join(_project_root_directory, 'src/main/webapp/app/forms', root_form, dir_name)
-                    gpt_prompts = _gpt_prompts
-                    if _gpt_prompts_subcomponent is not None and len(_gpt_prompts_subcomponent) > 0:
-                        gpt_prompts = _gpt_prompts_subcomponent
-                    process_form_directory(form_path, description_file, _model_id, _model_token_limit, gpt_prompts,
-                                           _skip_router_outlet, _skip_router_outlet_text)
+    with ThreadPoolExecutor(max_workers=_thread_count) as executor:
+        ordinal = 1
 
-        if description_file is not None:
-            close_component_markdown(description_file)
-            rewrite_file_with_gpt(_output_directory, root_form)
+        for json_file in json_files:
+            executor.submit(analyze_single_applipress_form,
+                            json_file,
+                            _output_directory,
+                            content_file,
+                            _project_root_directory,
+                            _model_id,
+                            _model_token_limit,
+                            _gpt_prompts,
+                            _skip_router_outlet, _skip_router_outlet_text
+                            )
+            ordinal += 1
 
+    print('All tasks have been finished')
+
+    executor.shutdown()
+
+    # Since we are using multithreading, we need to sort the content file
+    sort_content_markdown_alphabetically(content_file)
     close_content_markdown(content_file)
-    print('Total tokens consumed: {0}'.format(total_tokens))
+    # print('Total tokens consumed: {0}'.format(total_tokens))
     return 0
 
 
